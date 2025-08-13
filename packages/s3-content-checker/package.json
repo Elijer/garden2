@@ -1,0 +1,23 @@
+{
+  "name": "s3-content-checker",
+  "version": "1.0.0",
+  "description": "Compare S3 bucket contents with local content folder",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "tsx src/index.ts",
+    "destroy": "tsx src/destroy.ts",
+    "dev": "tsx --watch src/index.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.651.1",
+    "dotenv": "^16.4.5",
+    "globby": "^14.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.23",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  }
+}
