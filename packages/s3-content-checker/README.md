@@ -1,6 +1,6 @@
 # S3 Content Checker
 
-A TypeScript utility to compare files in an S3 bucket with S3 references in local content files. This tool helps identify files that exist in your S3 bucket but are not referenced anywhere in your content (orphaned files).
+A TypeScript utility to compare files in an S3 bucket with S3 references in local files in the `content` directory. This tool helps identify files that exist in your S3 bucket but are not referenced anywhere in your content (orphaned files).
 
 ## Features
 
