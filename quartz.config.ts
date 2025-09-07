@@ -8,8 +8,8 @@ import * as Plugin from "./quartz/plugins"
  */
 const config: QuartzConfig = {
   configuration: {
-    pageTitle: "Elijah's Digital Garden",
-    pageTitleSuffix: "Code/Art/Thoughts",
+    pageTitle: "thornberry.io",
+    pageTitleSuffix: "",
     enableSPA: true,
     enablePopovers: false,
     analytics: {
@@ -91,7 +91,7 @@ const config: QuartzConfig = {
       Plugin.Favicon(),
       Plugin.NotFoundPage(),
       // Comment out CustomOgImages to speed up build time
-      Plugin.CustomOgImages(),
+      // Plugin.CustomOgImages(),
     ],
   },
 }

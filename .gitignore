@@ -11,3 +11,4 @@ private/
 replit.nix
 content/
 content # symlinks are files, so to ignore the file, ignore without trailing slash
+.env
