@@ -11,13 +11,13 @@ const config: QuartzConfig = {
     pageTitle: "Elijah's Digital Garden",
     pageTitleSuffix: "Code/Art/Thoughts",
     enableSPA: true,
-    enablePopovers: true,
+    enablePopovers: false,
     analytics: {
       provider: "plausible",
     },
     locale: "en-US",
     baseUrl: "thornberry.io",
-    ignorePatterns: ["private", "templates", ".obsidian"], // Folders quartz should ignore when parsing content into pages
+    ignorePatterns: ["private", "templates", ".obsidian", "**/.tmp.drivedownload/**", "**/.tmp.driveupload/**", ".DS_Store"], // Folders quartz should ignore when parsing content into pages
     defaultDateType: "modified",
     theme: {
       fontOrigin: "googleFonts",
@@ -57,7 +57,7 @@ const config: QuartzConfig = {
     transformers: [
       Plugin.FrontMatter(),
       Plugin.CreatedModifiedDate({
-        priority: ["frontmatter", "git", "filesystem"],
+        priority: ["frontmatter", "filesystem", "git"],
       }),
       Plugin.SyntaxHighlighting({
         theme: {
