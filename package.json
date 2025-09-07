@@ -18,7 +18,8 @@
     "format": "npx prettier . --write",
     "test": "tsx --test",
     "profile": "0x -D prof ./quartz/bootstrap-cli.mjs build --concurrency=1",
-    "serve": "npx quartz build --serve"
+    "serve": "npx quartz build --serve",
+    "deploy": "chmod +x deploy.zsh && ./deploy.zsh"
   },
   "engines": {
     "npm": ">=10.9.2",
