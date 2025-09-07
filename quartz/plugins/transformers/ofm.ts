@@ -164,6 +164,9 @@ export const ObsidianFlavoredMarkdown: QuartzTransformerPlugin<Partial<Options>>
         src = src.replace(commentRegex, "")
       }
 
+      // Fix self-closing audio tags to properly closed tags
+      src = src.replace(/<audio\s+([^>]*?)\s*\/>/g, '<audio $1></audio>')
+
       // pre-transform blockquotes
       if (opts.callouts) {
         src = src.replace(calloutLineRegex, (value) => {
