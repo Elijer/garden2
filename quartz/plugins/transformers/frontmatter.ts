@@ -87,12 +87,27 @@ export const FrontMatter: QuartzTransformerPlugin<Partial<Options>> = (userOpts)
               allSlugs.push(...file.data.aliases)
             }
 
-            if (data.permalink != null && data.permalink.toString() !== "") {
-              data.permalink = data.permalink.toString() as FullSlug
+            // Handle permalinks (single string or array of strings)
+            if (data.permalink != null) {
               const aliases = file.data.aliases ?? []
-              aliases.push(data.permalink)
+              
+              if (Array.isArray(data.permalink)) {
+                // Handle array of permalinks
+                data.permalink.forEach((link) => {
+                  if (typeof link === "string" && link.toString() !== "") {
+                    const permalink = link.toString() as FullSlug
+                    aliases.push(permalink)
+                    allSlugs.push(permalink)
+                  }
+                })
+              } else if (data.permalink.toString() !== "") {
+                // Handle single permalink
+                data.permalink = data.permalink.toString() as FullSlug
+                aliases.push(data.permalink)
+                allSlugs.push(data.permalink)
+              }
+              
               file.data.aliases = aliases
-              allSlugs.push(data.permalink)
             }
 
             const cssclasses = coerceToArray(coalesceAliases(data, ["cssclasses", "cssclass"]))
@@ -139,6 +154,7 @@ declare module "vfile" {
     } & Partial<{
         tags: string[]
         aliases: string[]
+        permalink: string | string[]
         modified: string
         created: string
         published: string
