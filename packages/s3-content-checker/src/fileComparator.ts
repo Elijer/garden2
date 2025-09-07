@@ -49,13 +49,13 @@ export class FileComparator {
   /**
    * Save comparison results to output files
    */
-  static async saveResultsToFiles(result: ComparisonResult, outputDir: string): Promise<void> {
+  static async saveResultsToFiles(result: ComparisonResult, outputDir: string, s3BaseUrl?: string): Promise<void> {
     try {
       // Ensure output directory exists
       await fs.mkdir(outputDir, { recursive: true });
 
       // Save human-readable report to .txt file
-      const txtContent = this.generateTxtReport(result);
+      const txtContent = this.generateTxtReport(result, s3BaseUrl);
       await fs.writeFile(path.join(outputDir, 'orphaned-files-report.txt'), txtContent);
 
       // Save structured data to .json file for programmatic deletion
@@ -74,7 +74,7 @@ export class FileComparator {
   /**
    * Generate human-readable text report
    */
-  private static generateTxtReport(result: ComparisonResult): string {
+  private static generateTxtReport(result: ComparisonResult, s3BaseUrl?: string): string {
     const timestamp = new Date().toISOString();
     
     let report = `S3 ORPHANED FILES REPORT\n`;
@@ -93,7 +93,12 @@ export class FileComparator {
       report += `These S3 files exist but are not referenced in any content files:\n\n`;
       
       result.s3Only.forEach((fileId, index) => {
-        report += `${index + 1}. ${fileId}\n`;
+        if (s3BaseUrl) {
+          const s3Url = `${s3BaseUrl}/attachments/${fileId}`;
+          report += `${index + 1}. [${fileId}](${s3Url})\n`;
+        } else {
+          report += `${index + 1}. ${fileId}\n`;
+        }
       });
       
       report += `\n`;
@@ -136,7 +141,7 @@ export class FileComparator {
   /**
    * Print a formatted comparison report
    */
-  static printComparisonReport(result: ComparisonResult): void {
+  static printComparisonReport(result: ComparisonResult, s3BaseUrl?: string): void {
     console.log('\n' + '='.repeat(80));
     console.log('📊 S3 CONTENT REFERENCE COMPARISON REPORT');
     console.log('='.repeat(80));
@@ -149,10 +154,14 @@ export class FileComparator {
     console.log(`   S3 files NOT referenced in content: ${result.missingReferences}`);
 
     if (result.s3Only.length > 0) {
-      console.log(`\n🔍 S3 files that are NOT referenced in content (${result.s3Only.length}):`);
       console.log('-'.repeat(60));
       result.s3Only.forEach((fileId, index) => {
         console.log(`   ${index + 1}. ${fileId}`);
+        if (s3BaseUrl) {
+          // Construct the full S3 URL for easy viewing
+          const s3Url = `${s3BaseUrl}/attachments/${fileId}`;
+          console.log(`      🔗 ${s3Url}`);
+        }
       });
       
       console.log(`\n💡 These S3 files appear to be orphaned - they exist in S3 but aren't linked`);

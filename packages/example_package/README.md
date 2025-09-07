@@ -1,0 +1,1 @@
+New functionality can be added to the blog with this format

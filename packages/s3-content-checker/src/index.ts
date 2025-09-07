@@ -48,11 +48,11 @@ async function main(): Promise<void> {
     const comparisonResult = FileComparator.compareS3WithReferences(s3Files, contentReferences, totalContentFiles);
 
     // Print results
-    FileComparator.printComparisonReport(comparisonResult);
+    FileComparator.printComparisonReport(comparisonResult, config.s3.baseUrl);
 
     // Save results to output files
     const outputDir = path.join(process.cwd(), 'output');
-    await FileComparator.saveResultsToFiles(comparisonResult, outputDir);
+    await FileComparator.saveResultsToFiles(comparisonResult, outputDir, config.s3.baseUrl);
 
     // Exit with appropriate code
     if (comparisonResult.s3Only.length > 0) {
