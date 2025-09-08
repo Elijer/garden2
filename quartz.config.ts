@@ -1,5 +1,6 @@
 import { QuartzConfig } from "./quartz/cfg"
 import * as Plugin from "./quartz/plugins"
+import { ShortPermalinkContentPage } from "./quartz/plugins/emitters/shortPermalinks"
 
 /**
  * Quartz 4 Configuration
@@ -55,7 +56,7 @@ const config: QuartzConfig = {
   },
   plugins: {
     transformers: [
-      Plugin.FrontMatter(),
+      Plugin.CustomFrontMatter(),
       Plugin.CreatedModifiedDate({
         priority: ["frontmatter", "filesystem", "git"],
       }),
@@ -79,7 +80,10 @@ const config: QuartzConfig = {
     emitters: [
       Plugin.AliasRedirects(),
       Plugin.ComponentResources(),
-      Plugin.ContentPage(),
+      // Replace standard ContentPage with ShortPermalinkContentPage
+      Plugin.ShortPermalinkContentPage(),
+      // Add reverse aliases to handle redirects from original paths to permalinks
+      Plugin.ReverseAliases(),
       Plugin.FolderPage(),
       Plugin.TagPage(),
       Plugin.ContentIndex({
