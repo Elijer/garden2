@@ -1,77 +1,151 @@
 import { QuartzEmitterPlugin } from "../types"
-import { ContentPage } from "./contentPage"
-import { FullSlug } from "../../util/path"
+import { QuartzComponentProps } from "../../components/types"
+import { FullPageLayout } from "../../cfg"
+import { defaultContentPageLayout, sharedPageComponents } from "../../../quartz.layout"
+import { Content } from "../../components"
+import { write } from "./helpers"
+import { BuildCtx } from "../../util/ctx"
+import { Node } from "unist"
+import { StaticResources } from "../../util/resources"
+import { QuartzPluginData } from "../vfile"
+import { FullSlug, pathToRoot } from "../../util/path"
+import HeaderConstructor from "../../components/Header"
+import BodyConstructor from "../../components/Body"
+import { pageResources, renderPage } from "../../components/renderPage"
 
-// Simple plugin that extends ContentPage to use permalinks as primary URLs
-export const ShortPermalinkContentPage = (): QuartzEmitterPlugin => {
-  // Get the standard content page emitter
-  const contentPage = ContentPage()
-  
+// Process content with standard ContentPage processing
+async function processContent(
+  ctx: BuildCtx,
+  tree: Node,
+  fileData: QuartzPluginData,
+  allFiles: QuartzPluginData[],
+  opts: FullPageLayout,
+  resources: StaticResources,
+  targetSlug?: FullSlug
+) {
+  const slug = targetSlug || fileData.slug!
+  const cfg = ctx.cfg.configuration
+  const externalResources = pageResources(pathToRoot(slug), resources)
+  const componentData: QuartzComponentProps = {
+    ctx,
+    fileData,
+    externalResources,
+    cfg,
+    children: [],
+    tree,
+    allFiles,
+  }
+
+  const content = renderPage(cfg, slug, componentData, opts, externalResources)
+  return write({
+    ctx,
+    content,
+    slug,
+    ext: ".html",
+  })
+}
+
+// Get permalink slug if available
+function getPermalinkSlug(fileData: QuartzPluginData): FullSlug | undefined {
+  if (!fileData.frontmatter?.permalink) return undefined
+
+  // Get permalink (use first one if it's an array)
+  const permalink = Array.isArray(fileData.frontmatter.permalink)
+    ? fileData.frontmatter.permalink[0]
+    : fileData.frontmatter.permalink
+
+  // Convert permalink to slug (remove leading slash if present)
+  return (permalink.startsWith('/')
+    ? permalink.substring(1)
+    : permalink) as FullSlug
+}
+
+export const ShortPermalinkContentPage: QuartzEmitterPlugin<Partial<FullPageLayout>> = (userOpts) => {
+  const opts: FullPageLayout = {
+    ...sharedPageComponents,
+    ...defaultContentPageLayout,
+    pageBody: Content(),
+    ...userOpts,
+  }
+
+  const { head: Head, header, beforeBody, pageBody, afterBody, left, right, footer: Footer } = opts
+  const Header = HeaderConstructor()
+  const Body = BodyConstructor()
+
   return {
     name: "ShortPermalinkContentPage",
-    
-    async *emit(ctx, content) {
-      // Process content to use permalinks as slugs
-      const processedContent = content.map(([tree, file]) => {
-        // Only process if the file has a permalink
-        if (file.data.frontmatter?.permalink) {
-          // Create a copy of the file to avoid modifying the original
-          const newFile = { ...file }
-          newFile.data = { ...file.data }
-          
-          // Store original slug for breadcrumbs
-          newFile.data.originalSlug = newFile.data.slug
-          
-          // Get permalink (use first one if it's an array)
-          const permalink = Array.isArray(newFile.data.frontmatter.permalink)
-            ? newFile.data.frontmatter.permalink[0]
-            : newFile.data.frontmatter.permalink
-          
-          // Convert permalink to slug (remove leading slash if present)
-          const permalinkSlug = permalink.startsWith('/')
-            ? permalink.substring(1) as FullSlug
-            : permalink as FullSlug
-          
-          // Set the new slug
-          newFile.data.slug = permalinkSlug
-          
-          return [tree, newFile]
-        }
-        
-        // If no permalink, return the original file
-        return [tree, file]
-      })
-      
-      // Pass processed content to the standard ContentPage emitter
-      yield* contentPage.emit(ctx, processedContent)
+    getQuartzComponents() {
+      return [
+        Head,
+        Header,
+        Body,
+        ...header,
+        ...beforeBody,
+        pageBody,
+        ...afterBody,
+        ...left,
+        ...right,
+        Footer,
+      ]
     },
-    
-    async *partialEmit(ctx, content, resources, changeEvents) {
-      // Process content for partial emits too
-      const processedContent = content.map(([tree, file]) => {
-        if (file.data.frontmatter?.permalink) {
-          const newFile = { ...file }
-          newFile.data = { ...file.data }
-          
-          newFile.data.originalSlug = newFile.data.slug
-          
-          const permalink = Array.isArray(newFile.data.frontmatter.permalink)
-            ? newFile.data.frontmatter.permalink[0]
-            : newFile.data.frontmatter.permalink
-          
-          const permalinkSlug = permalink.startsWith('/')
-            ? permalink.substring(1) as FullSlug
-            : permalink as FullSlug
-          
-          newFile.data.slug = permalinkSlug
-          
-          return [tree, newFile]
-        }
+    async *emit(ctx, content, resources) {
+      const allFiles = content.map(([_, file]) => file.data)
+
+      for (const [tree, file] of content) {
+        const fileData = file.data
+        const originalSlug = fileData.slug!
         
-        return [tree, file]
-      })
-      
-      yield* contentPage.partialEmit(ctx, processedContent, resources, changeEvents)
+        // Skip index and tag pages
+        if (originalSlug.endsWith("/index") || originalSlug.startsWith("tags/")) continue
+
+        // Get permalink if available
+        const permalinkSlug = getPermalinkSlug(fileData)
+        
+        if (permalinkSlug) {
+          // Store original slug for breadcrumbs
+          fileData.originalSlug = originalSlug
+          
+          // Generate content at the permalink URL
+          yield processContent(ctx, tree, fileData, allFiles, opts, resources, permalinkSlug)
+        } else {
+          // No permalink, just process normally
+          yield processContent(ctx, tree, fileData, allFiles, opts, resources)
+        }
+      }
+    },
+    async *partialEmit(ctx, content, resources, changeEvents) {
+      const allFiles = content.map(([_, file]) => file.data)
+
+      // Find all slugs that changed or were added
+      const changedSlugs = new Set<string>()
+      for (const changeEvent of changeEvents) {
+        if (!changeEvent.file) continue
+        if (changeEvent.type === "add" || changeEvent.type === "change") {
+          changedSlugs.add(changeEvent.file.data.slug!)
+        }
+      }
+
+      for (const [tree, file] of content) {
+        const fileData = file.data
+        const originalSlug = fileData.slug!
+        
+        if (!changedSlugs.has(originalSlug)) continue
+        if (originalSlug.endsWith("/index") || originalSlug.startsWith("tags/")) continue
+
+        // Get permalink if available
+        const permalinkSlug = getPermalinkSlug(fileData)
+        
+        if (permalinkSlug) {
+          // Store original slug for breadcrumbs
+          fileData.originalSlug = originalSlug
+          
+          // Generate content at the permalink URL
+          yield processContent(ctx, tree, fileData, allFiles, opts, resources, permalinkSlug)
+        } else {
+          // No permalink, just process normally
+          yield processContent(ctx, tree, fileData, allFiles, opts, resources)
+        }
+      }
     },
   }
 }

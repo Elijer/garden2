@@ -56,7 +56,7 @@ const config: QuartzConfig = {
   },
   plugins: {
     transformers: [
-      Plugin.FrontMatter(),
+      Plugin.CustomFrontMatter(),
       Plugin.CreatedModifiedDate({
         priority: ["frontmatter", "filesystem", "git"],
       }),
@@ -81,7 +81,9 @@ const config: QuartzConfig = {
       Plugin.AliasRedirects(),
       Plugin.ComponentResources(),
       // Replace standard ContentPage with ShortPermalinkContentPage
-      ShortPermalinkContentPage(),
+      Plugin.ShortPermalinkContentPage(),
+      // Add reverse aliases to handle redirects from original paths to permalinks
+      Plugin.ReverseAliases(),
       Plugin.FolderPage(),
       Plugin.TagPage(),
       Plugin.ContentIndex({

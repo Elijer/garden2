@@ -52,6 +52,7 @@ export interface ShortPermalinksOptions {
 export interface GlobalConfiguration {
   pageTitle: string
   /** Whether to show the last modified date at the end of pages */
+  pageTitleSuffix?: string
   enableFrontmatterTime: boolean
   /** Whether to show the reading time at the end of pages */
   enableReadingTime: boolean
