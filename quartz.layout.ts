@@ -1,5 +1,6 @@
 import { PageLayout, SharedLayout } from "./quartz/cfg"
 import * as Component from "./quartz/components"
+import { CustomBreadcrumbs } from "./quartz/components/CustomBreadcrumbs"
 
 // components shared across all pages
 export const sharedPageComponents: SharedLayout = {
@@ -27,7 +28,9 @@ export const defaultContentPageLayout: PageLayout = {
       ],
     }),
     Component.ConditionalRender({
-      component: Component.Breadcrumbs(),
+      component: CustomBreadcrumbs({
+        spacer: "/"
+      }),
       condition: (page) => page.fileData.slug !== "index",
     }),
     Component.ArticleTitle(),
@@ -58,7 +61,13 @@ export const defaultContentPageLayout: PageLayout = {
 
 // components for pages that display lists of pages  (e.g. tags or folders)
 export const defaultListPageLayout: PageLayout = {
-  beforeBody: [Component.Breadcrumbs(), Component.ArticleTitle(), Component.ContentMeta()],
+  beforeBody: [
+    CustomBreadcrumbs({
+      spacer: "/"
+    }), 
+    Component.ArticleTitle(), 
+    Component.ContentMeta()
+  ],
   left: [
     Component.PageTitle(),
     Component.MobileOnly(Component.Spacer()),

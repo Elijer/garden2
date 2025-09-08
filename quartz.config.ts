@@ -1,5 +1,6 @@
 import { QuartzConfig } from "./quartz/cfg"
 import * as Plugin from "./quartz/plugins"
+import { ShortPermalinkContentPage } from "./quartz/plugins/emitters/shortPermalinks"
 
 /**
  * Quartz 4 Configuration
@@ -79,7 +80,8 @@ const config: QuartzConfig = {
     emitters: [
       Plugin.AliasRedirects(),
       Plugin.ComponentResources(),
-      Plugin.ContentPage(),
+      // Replace standard ContentPage with ShortPermalinkContentPage
+      ShortPermalinkContentPage(),
       Plugin.FolderPage(),
       Plugin.TagPage(),
       Plugin.ContentIndex({
