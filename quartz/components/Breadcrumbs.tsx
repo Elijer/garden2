@@ -51,7 +51,7 @@ export default ((opts?: Partial<BreadcrumbOptions>) => {
     ctx,
   }: QuartzComponentProps) => {
     const trie = (ctx.trie ??= trieFromAllFiles(allFiles))
-    // Use original slug for breadcrumbs to maintain path-based navigation ^
+    // Use original slug for breadcrumbs - they should work exactly as before ^
     const breadcrumbSlug = fileData.originalSlug ?? fileData.slug!
     const slugParts = breadcrumbSlug.split("/")
     const pathNodes = trie.ancestryChain(slugParts)
@@ -60,17 +60,17 @@ export default ((opts?: Partial<BreadcrumbOptions>) => {
       return null
     }
 
-    // Create mapping from original slugs to current slugs (permalinks) for link resolution ^
+    // Create mapping from original slugs to current slugs (permalinks) for correct linking ^
     const slugMapping = new Map<FullSlug, FullSlug>()
     allFiles.forEach(file => {
       const originalSlug = file.originalSlug ?? file.slug!
-      slugMapping.set(originalSlug, file.slug!)
+      slugMapping.set(originalSlug, file.slug!) // Map original -> current (permalink)
     })
 
     const crumbs: CrumbData[] = pathNodes.map((node, idx) => {
-      // Use the mapping to resolve to the correct permalink ^
-      const targetSlug = slugMapping.get(node.slug) ?? node.slug
-      const crumb = formatCrumb(node.displayName, fileData.slug!, simplifySlug(targetSlug))
+      // Find the actual slug (permalink) for this breadcrumb node ^
+      const actualSlug = slugMapping.get(node.slug) ?? node.slug
+      const crumb = formatCrumb(node.displayName, fileData.slug!, simplifySlug(actualSlug))
       if (idx === 0) {
         crumb.displayName = options.rootName
       }

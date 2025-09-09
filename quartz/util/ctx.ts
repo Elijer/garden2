@@ -35,7 +35,7 @@ export function trieFromAllFiles(allFiles: QuartzPluginData[]): FileTrieNode<Bui
   const trie = new FileTrieNode<BuildTimeTrieData>([])
   allFiles.forEach((file) => {
     if (file.frontmatter) {
-      // Use original slug for trie structure, keeping current slug for linking ^
+      // Use original slug for trie structure - breadcrumbs and explorer should work as before ^
       const structuralSlug = file.originalSlug ?? file.slug!
       trie.add({
         ...file,
