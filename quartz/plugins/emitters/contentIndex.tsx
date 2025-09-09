@@ -19,6 +19,7 @@ export type ContentDetails = {
   richContent?: string
   date?: Date
   description?: string
+  permalink?: FullSlug // Add permalink field for actual URL when different from slug ^
 }
 
 interface Options {
@@ -100,13 +101,14 @@ export const ContentIndex: QuartzEmitterPlugin<Partial<Options>> = (opts) => {
       const cfg = ctx.cfg.configuration
       const linkIndex: ContentIndexMap = new Map()
       for (const [tree, file] of content) {
-        const slug = file.data.slug! // This is the permalink when it exists
-        const structuralSlug = file.data.originalSlug ?? slug // Original path for navigation structure
+        const currentSlug = file.data.slug! // This is the permalink when it exists
+        const structuralSlug = file.data.originalSlug ?? currentSlug // Original path for tree structure
         const date = getDate(ctx.cfg.configuration, file.data) ?? new Date()
         if (opts?.includeEmptyFiles || (file.data.text && file.data.text !== "")) {
-          // KEY: Use original slug for Explorer structure but current slug for serving ^
+          // Use original slug for both map key AND entry.slug (for tree structure) ^
           linkIndex.set(structuralSlug, {
-            slug: slug, // Use current slug (permalink) for actual links and serving
+            slug: structuralSlug, // Use original slug for tree structure
+            permalink: file.data.originalSlug ? currentSlug : undefined, // Store permalink separately when it exists
             filePath: file.data.relativePath!,
             title: file.data.frontmatter?.title!,
             links: file.data.links ?? [],

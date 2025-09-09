@@ -71,8 +71,11 @@ export default ((opts?: Partial<BreadcrumbOptions>) => {
       // Find the actual slug (permalink) for this breadcrumb node ^
       const actualSlug = slugMapping.get(node.slug) ?? node.slug
       const crumb = formatCrumb(node.displayName, fileData.slug!, simplifySlug(actualSlug))
+      
       if (idx === 0) {
         crumb.displayName = options.rootName
+        // Ensure home always links to index page ^
+        crumb.path = resolveRelative(fileData.slug!, "" as FullSlug)
       }
 
       // For last node (current page), set empty path

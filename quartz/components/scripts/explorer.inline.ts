@@ -84,11 +84,14 @@ function createFileNode(currentSlug: FullSlug, node: FileTrieNode): HTMLLIElemen
   const clone = template.content.cloneNode(true) as DocumentFragment
   const li = clone.querySelector("li") as HTMLLIElement
   const a = li.querySelector("a") as HTMLAnchorElement
-  a.href = resolveRelative(currentSlug, node.slug)
+  
+  // Use permalink if available, otherwise use original slug ^
+  const linkSlug = node.data?.permalink ?? node.slug
+  a.href = resolveRelative(currentSlug, linkSlug)
   a.dataset.for = node.slug
   a.textContent = node.displayName
 
-  if (currentSlug === node.slug) {
+  if (currentSlug === linkSlug) {
     a.classList.add("active")
   }
 
@@ -115,7 +118,9 @@ function createFolderNode(
     // Replace button with link for link behavior
     const button = titleContainer.querySelector(".folder-button") as HTMLElement
     const a = document.createElement("a")
-    a.href = resolveRelative(currentSlug, folderPath)
+    // Use permalink if available for folder links ^
+    const linkPath = node.data?.permalink ?? folderPath
+    a.href = resolveRelative(currentSlug, linkPath)
     a.dataset.for = folderPath
     a.className = "folder-title"
     a.textContent = node.displayName
