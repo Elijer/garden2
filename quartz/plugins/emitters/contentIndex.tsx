@@ -100,11 +100,13 @@ export const ContentIndex: QuartzEmitterPlugin<Partial<Options>> = (opts) => {
       const cfg = ctx.cfg.configuration
       const linkIndex: ContentIndexMap = new Map()
       for (const [tree, file] of content) {
-        const slug = file.data.slug!
+        const slug = file.data.slug! // Current slug (might be permalink)
+        const structuralSlug = file.data.originalSlug ?? slug // Original path for tree structure
         const date = getDate(ctx.cfg.configuration, file.data) ?? new Date()
         if (opts?.includeEmptyFiles || (file.data.text && file.data.text !== "")) {
-          linkIndex.set(slug, {
-            slug,
+          // Use original slug for map key (tree structure) but keep current slug for linking ^
+          linkIndex.set(structuralSlug, {
+            slug, // Keep current slug for link resolution
             filePath: file.data.relativePath!,
             title: file.data.frontmatter?.title!,
             links: file.data.links ?? [],
