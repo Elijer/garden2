@@ -90,21 +90,36 @@ export const FrontMatter: QuartzTransformerPlugin<Partial<Options>> = (userOpts)
             // Handle permalinks (single string or array of strings)
             if (data.permalink != null) {
               const aliases = file.data.aliases ?? []
+              const originalSlug = file.data.slug! // Store original file path slug
+              file.data.originalSlug = originalSlug // Store for breadcrumbs ^
               
               if (Array.isArray(data.permalink)) {
-                // Handle array of permalinks
-                data.permalink.forEach((link) => {
-                  if (typeof link === "string" && link.toString() !== "") {
-                    const permalink = link.toString() as FullSlug
-                    aliases.push(permalink)
-                    allSlugs.push(permalink)
-                  }
-                })
+                // Handle array of permalinks - use first one as primary
+                const firstPermalink = data.permalink.find(link => 
+                  typeof link === "string" && link.toString() !== ""
+                )
+                if (firstPermalink) {
+                  const permalink = firstPermalink.toString() as FullSlug
+                  file.data.slug = permalink // Set permalink as primary slug
+                  aliases.push(originalSlug) // Add original path as alias for redirect
+                  allSlugs.push(permalink)
+                  
+                  // Add remaining permalinks as aliases
+                  data.permalink.slice(1).forEach((link) => {
+                    if (typeof link === "string" && link.toString() !== "") {
+                      const additionalPermalink = link.toString() as FullSlug
+                      aliases.push(additionalPermalink)
+                      allSlugs.push(additionalPermalink)
+                    }
+                  })
+                }
               } else if (data.permalink.toString() !== "") {
                 // Handle single permalink
-                data.permalink = data.permalink.toString() as FullSlug
-                aliases.push(data.permalink)
-                allSlugs.push(data.permalink)
+                const permalink = data.permalink.toString() as FullSlug
+                file.data.slug = permalink // Set permalink as primary slug
+                aliases.push(originalSlug) // Add original path as alias for redirect
+                allSlugs.push(permalink)
+                data.permalink = permalink
               }
               
               file.data.aliases = aliases
@@ -133,9 +148,12 @@ export const FrontMatter: QuartzTransformerPlugin<Partial<Options>> = (userOpts)
 
             if (socialImage) data.socialImage = socialImage
 
-            // Remove duplicate slugs
+            // Remove duplicate slugs - use safe method to avoid max argument limits ^
             const uniqueSlugs = [...new Set(allSlugs)]
-            allSlugs.splice(0, allSlugs.length, ...uniqueSlugs)
+            allSlugs.length = 0
+            for (const slug of uniqueSlugs) {
+              allSlugs.push(slug)
+            }
 
             // fill in frontmatter
             file.data.frontmatter = data as QuartzPluginData["frontmatter"]
@@ -149,6 +167,7 @@ export const FrontMatter: QuartzTransformerPlugin<Partial<Options>> = (userOpts)
 declare module "vfile" {
   interface DataMap {
     aliases: FullSlug[]
+    originalSlug?: FullSlug
     frontmatter: { [key: string]: unknown } & {
       title: string
     } & Partial<{

@@ -80,7 +80,9 @@ function computeFolderInfo(
 
   // Update with actual content if available
   for (const [tree, file] of content) {
-    const slug = stripSlashes(simplifySlug(file.data.slug!)) as SimpleSlug
+    // Use original slug for folder structure matching ^
+    const structuralSlug = file.data.originalSlug ?? file.data.slug!
+    const slug = stripSlashes(simplifySlug(structuralSlug)) as SimpleSlug
     if (folders.has(slug)) {
       folderInfo[slug] = [tree, file]
     }
@@ -134,11 +136,13 @@ export const FolderPage: QuartzEmitterPlugin<Partial<FolderPageOptions>> = (user
 
       const folders: Set<SimpleSlug> = new Set(
         allFiles.flatMap((data) => {
-          return data.slug
-            ? _getFolders(data.slug).filter(
-                (folderName) => folderName !== "." && folderName !== "tags",
-              )
-            : []
+          // Use originalSlug for folder structure, fall back to slug ^
+          const structuralSlug = data.originalSlug ?? data.slug
+          if (!structuralSlug) return []
+          
+          return _getFolders(structuralSlug).filter(
+            (folderName) => folderName !== "." && folderName !== "tags",
+          )
         }),
       )
 
