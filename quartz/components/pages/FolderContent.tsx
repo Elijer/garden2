@@ -9,6 +9,7 @@ import { QuartzPluginData } from "../../plugins/vfile"
 import { ComponentChildren } from "preact"
 import { concatenateResources } from "../../util/resources"
 import { trieFromAllFiles } from "../../util/ctx"
+import { FullSlug } from "../../util/path"
 
 interface FolderContentOptions {
   /**
@@ -36,12 +37,25 @@ export default ((opts?: Partial<FolderContentOptions>) => {
       return null
     }
 
+    // Create mapping from original slugs to current slugs (permalinks) for correct linking ^
+    const slugMapping = new Map<string, string>()
+    allFiles.forEach(file => {
+      const originalSlug = file.originalSlug ?? file.slug!
+      slugMapping.set(originalSlug, file.slug!) // Map original -> current (permalink)
+    })
+
     const allPagesInFolder: QuartzPluginData[] =
       folder.children
         .map((node) => {
           // regular file, proceed
           if (node.data) {
-            return node.data
+            // If this node has a permalink, make sure we use the current slug ^
+            const originalSlug = node.slug
+            const currentSlug = slugMapping.get(originalSlug) ?? originalSlug
+            return {
+              ...node.data,
+              slug: currentSlug as FullSlug
+            }
           }
 
           if (node.isFolder && options.showSubfolders) {
@@ -77,8 +91,11 @@ export default ((opts?: Partial<FolderContentOptions>) => {
               )
             }
 
+            // For folders, check if there's a permalink for the index file ^
+            const folderSlug = node.slug
+            const currentSlug = slugMapping.get(folderSlug) ?? folderSlug
             return {
-              slug: node.slug,
+              slug: currentSlug as FullSlug,
               dates: getMostRecentDates(),
               frontmatter: {
                 title: node.displayName,
