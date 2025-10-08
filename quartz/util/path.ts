@@ -63,7 +63,8 @@ function sluggify(s: string): string {
         .replace(/&/g, "-and-")
         .replace(/%/g, "-percent")
         .replace(/\?/g, "")
-        .replace(/#/g, ""),
+        .replace(/#/g, "")
+        .toLowerCase() // Convert to lowercase ^
     )
     .join("/") // always use / as sep
     .replace(/\/$/, "")
@@ -93,7 +94,8 @@ export function simplifySlug(fp: FullSlug): SimpleSlug {
 }
 
 export function transformInternalLink(link: string): RelativeURL {
-  let [fplike, anchor] = splitAnchor(decodeURI(link))
+  // Convert link to lowercase for consistent URL generation ^
+  let [fplike, anchor] = splitAnchor(decodeURI(link.toLowerCase()))
 
   const folderPath = isFolderPath(fplike)
   let segments = fplike.split("/").filter((x) => x.length > 0)
@@ -169,7 +171,9 @@ export function pathToRoot(slug: FullSlug): RelativeURL {
 }
 
 export function resolveRelative(current: FullSlug, target: FullSlug | SimpleSlug): RelativeURL {
-  const res = joinSegments(pathToRoot(current), simplifySlug(target as FullSlug)) as RelativeURL
+  // Ensure target is lowercase for consistent URL generation ^
+  const lowercaseTarget = typeof target === 'string' ? target.toLowerCase() as (FullSlug | SimpleSlug) : target
+  const res = joinSegments(pathToRoot(current), simplifySlug(lowercaseTarget as FullSlug)) as RelativeURL
   return res
 }
 
@@ -185,7 +189,7 @@ export function splitAnchor(link: string): [string, string] {
 export function slugTag(tag: string) {
   return tag
     .split("/")
-    .map((tagSegment) => sluggify(tagSegment))
+    .map((tagSegment) => sluggify(tagSegment)) // sluggify already converts to lowercase
     .join("/")
 }
 
@@ -227,7 +231,8 @@ export interface TransformOptions {
 }
 
 export function transformLink(src: FullSlug, target: string, opts: TransformOptions): RelativeURL {
-  let targetSlug = transformInternalLink(target)
+  // Ensure target is lowercase for consistent URL generation ^
+  let targetSlug = transformInternalLink(target.toLowerCase())
 
   if (opts.strategy === "relative") {
     return targetSlug as RelativeURL
@@ -241,7 +246,8 @@ export function transformLink(src: FullSlug, target: string, opts: TransformOpti
       const matchingFileNames = opts.allSlugs.filter((slug) => {
         const parts = slug.split("/")
         const fileName = parts.at(-1)
-        return targetCanonical === fileName
+        // Case-insensitive comparison for file names ^
+        return targetCanonical.toLowerCase() === fileName?.toLowerCase()
       })
 
       // only match, just use it
@@ -267,7 +273,10 @@ export function isFolderPath(fplike: string): boolean {
 }
 
 export function endsWith(s: string, suffix: string): boolean {
-  return s === suffix || s.endsWith("/" + suffix)
+  // Case-insensitive comparison for consistent URL handling ^
+  const lowerS = s.toLowerCase()
+  const lowerSuffix = suffix.toLowerCase()
+  return lowerS === lowerSuffix || lowerS.endsWith("/" + lowerSuffix)
 }
 
 export function trimSuffix(s: string, suffix: string): string {
