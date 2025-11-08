@@ -16,3 +16,9 @@ Quartz v4 features a from-the-ground rewrite focusing on end-user extensibility 
     <img src="https://cdn.jsdelivr.net/gh/jackyzha0/jackyzha0/sponsorkit/sponsors.svg" />
   </a>
 </p>
+
+# Deployment
+
+`docker login` and `railway login` are needed to run `pnpm run deploy`, which needs to be authenticated both by docker hub and railway.
+
+This gives clues to the deployment process - we build a docker image and push it to docker hub, then deploy the image from docker hub to railway.
