@@ -1,6 +1,6 @@
 import { FullSlug, isRelativeURL, resolveRelative, simplifySlug } from "../../util/path"
 import { QuartzEmitterPlugin } from "../types"
-import { write } from "./helpers"
+import { write, deleteFile } from "./helpers"
 import { BuildCtx } from "../../util/ctx"
 import { VFile } from "vfile"
 import path from "path"
@@ -43,12 +43,35 @@ export const AliasRedirects: QuartzEmitterPlugin = () => ({
       yield* processFile(ctx, file)
     }
   },
-  async *partialEmit(ctx, _content, _resources, changeEvents) {
+  async *partialEmit(ctx, content, _resources, changeEvents) {
+    // create a set of all slugs in the filtered content
+    const publishedSlugs = new Set(content.map(([_tree, file]) => file.data.slug!))
+
     for (const changeEvent of changeEvents) {
       if (!changeEvent.file) continue
-      if (changeEvent.type === "add" || changeEvent.type === "change") {
-        // add new ones if this file still exists
+      
+      const slug = changeEvent.file.data.slug!
+      const isPublished = publishedSlugs.has(slug)
+      
+      if ((changeEvent.type === "add" || changeEvent.type === "change") && isPublished) {
+        // add new ones if this file still exists and is published
         yield* processFile(ctx, changeEvent.file)
+      } else if (changeEvent.type === "delete" || !isPublished) {
+        // delete all alias redirect files for deleted content or unpublished content
+        const aliases = changeEvent.file.data.aliases ?? []
+        for (const aliasTarget of aliases) {
+          const ogSlug = simplifySlug(slug)
+          const aliasTargetSlug = (
+            isRelativeURL(aliasTarget)
+              ? path.normalize(path.join(ogSlug, "..", aliasTarget))
+              : aliasTarget
+          ) as FullSlug
+          
+          const deleted = await deleteFile({ ctx, slug: aliasTargetSlug, ext: ".html" })
+          if (deleted && ctx.argv.verbose) {
+            console.log(`[delete:AliasRedirects] ${deleted}`)
+          }
+        }
       }
     }
   },

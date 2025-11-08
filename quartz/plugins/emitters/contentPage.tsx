@@ -9,7 +9,7 @@ import { pathToRoot } from "../../util/path"
 import { defaultContentPageLayout, sharedPageComponents } from "../../../quartz.layout"
 import { Content } from "../../components"
 import { styleText } from "util"
-import { write } from "./helpers"
+import { write, deleteFile } from "./helpers"
 import { BuildCtx } from "../../util/ctx"
 import { Node } from "unist"
 import { StaticResources } from "../../util/resources"
@@ -100,12 +100,33 @@ export const ContentPage: QuartzEmitterPlugin<Partial<FullPageLayout>> = (userOp
     async *partialEmit(ctx, content, resources, changeEvents) {
       const allFiles = content.map((c) => c[1].data)
 
+      // create a set of all slugs in the filtered content
+      const publishedSlugs = new Set(content.map(([_tree, file]) => file.data.slug!))
+
       // find all slugs that changed or were added
       const changedSlugs = new Set<string>()
       for (const changeEvent of changeEvents) {
         if (!changeEvent.file) continue
         if (changeEvent.type === "add" || changeEvent.type === "change") {
           changedSlugs.add(changeEvent.file.data.slug!)
+        }
+      }
+
+      // handle deletions - remove HTML files for deleted content
+      // also remove files that were changed but are no longer in filtered content (e.g., published: false)
+      for (const changeEvent of changeEvents) {
+        if (!changeEvent.file) continue
+        
+        const slug = changeEvent.file.data.slug!
+        const shouldDelete = 
+          changeEvent.type === "delete" || 
+          (changeEvent.type === "change" && !publishedSlugs.has(slug))
+        
+        if (shouldDelete && !slug.endsWith("/index") && !slug.startsWith("tags/")) {
+          const deleted = await deleteFile({ ctx, slug, ext: ".html" })
+          if (deleted && ctx.argv.verbose) {
+            console.log(`[delete:${this.name}] ${deleted}`)
+          }
         }
       }
 

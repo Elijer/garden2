@@ -11,7 +11,6 @@ import { FilePath, QUARTZ, slugifyFilePath } from "../util/path"
 import path from "path"
 import workerpool, { Promise as WorkerPromise } from "workerpool"
 import { QuartzLogger } from "../util/log"
-import { trace } from "../util/trace"
 import { BuildCtx, WorkerSerializableBuildCtx } from "../util/ctx"
 import { styleText } from "util"
 
@@ -112,7 +111,19 @@ export function createFileParser(ctx: BuildCtx, fps: FilePath[]) {
           console.log(`[markdown] ${fp} -> ${file.data.slug} (${perf.timeSince()})`)
         }
       } catch (err) {
-        trace(`\nFailed to process markdown \`${fp}\``, err as Error)
+        // Handle file not found errors gracefully (can occur when files are deleted/renamed)
+        const error = err as any
+        if (error.code === 'ENOENT') {
+          if (argv.verbose) {
+            console.log(`[skip] ${fp} (file not found, likely deleted or renamed)`)
+          }
+        } else {
+          // For other errors, log as error but continue processing other files
+          console.error(`\nFailed to process markdown \`${fp}\`: ${error.message}`)
+          if (argv.verbose && error.stack) {
+            console.error(error.stack)
+          }
+        }
       }
     }
 
@@ -134,7 +145,12 @@ export function createMarkdownParser(ctx: BuildCtx, mdContent: MarkdownContent[]
           console.log(`[html] ${file.data.slug} (${perf.timeSince()})`)
         }
       } catch (err) {
-        trace(`\nFailed to process html \`${file.data.filePath}\``, err as Error)
+        // Log error but continue processing other files
+        const error = err as any
+        console.error(`\nFailed to process html \`${file.data.filePath}\`: ${error.message}`)
+        if (ctx.argv.verbose && error.stack) {
+          console.error(error.stack)
+        }
       }
     }
 
@@ -172,8 +188,10 @@ export async function parseMarkdown(ctx: BuildCtx, fps: FilePath[]): Promise<Pro
       workerType: "thread",
     })
     const errorHandler = (err: any) => {
-      console.error(err)
-      process.exit(1)
+      // Log worker errors but allow build to complete with remaining files
+      console.error("Worker error:", err)
+      // Return empty array to allow build to continue with partial results
+      return []
     }
 
     const serializableCtx: WorkerSerializableBuildCtx = {

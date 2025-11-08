@@ -212,17 +212,8 @@ async function rebuild(changes: ChangeEvent[], clientRefresh: () => void, buildD
     })
   }
 
-  // update state using changesSinceLastBuild
-  // we do this weird play of add => compute change events => remove
-  // so that partialEmitters can do appropriate cleanup based on the content of deleted files
+  // manually track non-markdown file additions
   for (const [file, change] of Object.entries(changesSinceLastBuild)) {
-    if (change === "delete") {
-      // universal delete case
-      contentMap.delete(file as FilePath)
-    }
-
-    // manually track non-markdown files as processed files only
-    // contains markdown files
     if (change === "add" && path.extname(file) !== ".md") {
       contentMap.set(file as FilePath, {
         type: "other",
@@ -230,6 +221,8 @@ async function rebuild(changes: ChangeEvent[], clientRefresh: () => void, buildD
     }
   }
 
+  // Create change events BEFORE removing deleted files from contentMap
+  // so that partialEmitters can access the file data for cleanup
   const changeEvents: ChangeEvent[] = Object.entries(changesSinceLastBuild).map(([fp, type]) => {
     const path = fp as FilePath
     const processedContent = contentMap.get(path)
@@ -247,6 +240,13 @@ async function rebuild(changes: ChangeEvent[], clientRefresh: () => void, buildD
       path,
     }
   })
+
+  // Now remove deleted files from contentMap after changeEvents are created
+  for (const [file, change] of Object.entries(changesSinceLastBuild)) {
+    if (change === "delete") {
+      contentMap.delete(file as FilePath)
+    }
+  }
 
   // update allFiles and then allSlugs with the consistent view of content map
   ctx.allFiles = Array.from(contentMap.keys())

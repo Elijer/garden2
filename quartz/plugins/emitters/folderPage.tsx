@@ -92,13 +92,34 @@ function computeFolderInfo(
 }
 
 function _getFolders(slug: FullSlug): SimpleSlug[] {
-  var folderName = path.dirname(slug ?? "") as SimpleSlug
+  if (!slug) return []
+  
+  var folderName = path.dirname(slug) as SimpleSlug
   const parentFolderNames = [folderName]
-
-  while (folderName !== ".") {
-    folderName = path.dirname(folderName ?? "") as SimpleSlug
+  
+  // Safety limit to prevent infinite loops
+  let depth = 0
+  const MAX_DEPTH = 100
+  
+  while (folderName !== "." && folderName !== "/" && folderName !== "") {
+    const prevFolderName = folderName
+    folderName = path.dirname(folderName) as SimpleSlug
+    
+    // Prevent infinite loop if dirname doesn't change
+    if (folderName === prevFolderName) {
+      break
+    }
+    
     parentFolderNames.push(folderName)
+    
+    // Safety check for max depth
+    depth++
+    if (depth > MAX_DEPTH) {
+      console.warn(`_getFolders exceeded max depth for slug: ${slug}`)
+      break
+    }
   }
+  
   return parentFolderNames
 }
 
@@ -157,8 +178,9 @@ export const FolderPage: QuartzEmitterPlugin<Partial<FolderPageOptions>> = (user
       const affectedFolders: Set<SimpleSlug> = new Set()
       for (const changeEvent of changeEvents) {
         if (!changeEvent.file) continue
-        const slug = changeEvent.file.data.slug!
-        const folders = _getFolders(slug).filter(
+        // Use originalSlug for folder structure, fall back to slug
+        const structuralSlug = changeEvent.file.data.originalSlug ?? changeEvent.file.data.slug!
+        const folders = _getFolders(structuralSlug).filter(
           (folderName) => folderName !== "." && folderName !== "tags",
         )
         folders.forEach((folder) => affectedFolders.add(folder))
