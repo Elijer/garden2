@@ -5,7 +5,17 @@ import * as Component from "./quartz/components"
 export const sharedPageComponents: SharedLayout = {
   head: Component.Head(),
   header: [],
-  afterBody: [],
+  afterBody: [
+    Component.ConditionalRender({
+      component: Component.RecentNotes({
+        // title: "Recent Posts",
+        title: "",
+        limit: 12,
+        showTags: true,
+      }),
+      condition: (page) => page.fileData.slug === "recent",
+    }),
+  ],
   footer: Component.Footer({
     links: {
       "Code": "https://elijahkennedy.com/",
@@ -52,6 +62,14 @@ export const defaultContentPageLayout: PageLayout = {
     // Component.Explorer(),
   ],
   right: [
+    // Component.ConditionalRender({
+    //   component: Component.RecentNotes({
+    //     title: "Recent Posts",
+    //     limit: 20,
+    //     showTags: true,
+    //   }),
+    //   condition: (page) => page.fileData.slug === "index",
+    // }),
     // Component.Graph(),
     // Component.DesktopOnly(Component.TableOfContents()),
     // Component.Backlinks(),
