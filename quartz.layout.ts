@@ -12,6 +12,7 @@ export const sharedPageComponents: SharedLayout = {
         title: "",
         limit: 12,
         showTags: true,
+        filter: (page) => page.slug !== "recent",
       }),
       condition: (page) => page.fileData.slug === "recent",
     }),
