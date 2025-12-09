@@ -31,6 +31,7 @@ git pull origin main
 cd ..
 
 echo "Building site..."
+rm -rf public
 npx quartz build
 
 echo "Building and pushing Docker image (version ${VERSION})..."

@@ -72,7 +72,7 @@ export const defaultContentPageLayout: PageLayout = {
     //   condition: (page) => page.fileData.slug === "index",
     // }),
     // Component.Graph(),
-    Component.DesktopOnly(Component.TableOfContents()),
+    // Component.DesktopOnly(Component.TableOfContents()),
     // Component.Backlinks(),
   ],
 }

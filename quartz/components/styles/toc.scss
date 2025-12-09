@@ -3,11 +3,19 @@
 .toc {
   display: flex;
   flex-direction: column;
-  overflow-y: hidden;
+  overflow-y: auto;
   min-height: 1.4rem;
-  flex: 0 0.5 auto;
+  flex: 0 0 auto;
+  max-height: calc(100vh - 300px);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  
   &:has(button.toc-header.collapsed) {
-    flex: 0 1 1.4rem;
+    flex: 0 0 1.4rem;
   }
 }
 
@@ -46,6 +54,12 @@ ul.toc-content.overflow {
   max-height: calc(100% - 2rem);
   overscroll-behavior: contain;
   list-style: none;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  
+  &::-webkit-scrollbar {
+    display: none;
+  }
 
   & > li > a {
     color: var(--dark);
